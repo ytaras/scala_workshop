@@ -1,8 +1,7 @@
 grammar workflowGrammar;
-workflow: 'workflow' ID '{'
-   (statesList)+
-'}';
-state: 'state' ID ('goes to' STATES_LIST)? ';';
-statesList: (ID ',')* ID; 
+file: workflowDefinition* EOF;
+workflowDefinition: 'workflow' ID '{' stateDefinition*?'}' ';';
+stateDefinition: 'start'? 'state' ID goes? ';';
+goes: 'goes' 'to' (ID',')* ID;
 ID: [a-z]+ ;
 WS: [ \t\r\n]+ -> skip;
