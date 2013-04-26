@@ -6,20 +6,19 @@ import scalaz._
 import syntax.validation._
 
 // TODO We could use JavaIdenParser to reuse ident parser
-object WorkflowParser extends RegexParsers {
-  def id      : Parser[String] = """[a-zA-Z]+""".r
-  def workflow: Parser[Workflow] = ("workflow" ~> id <~ "{") ~ step.* <~ ("}" ~ ";") ^^ {
+object WorkflowParser extends JavaTokenParsers {
+  def workflow: Parser[Workflow] = ("workflow" ~> ident <~ "{") ~ step.* <~ ("}" ~ ";") ^^ {
     case name ~ steps => Workflow(name, steps)
   }
   def workflows: Parser[List[Workflow]] = workflow.*
-  def step     : Parser[Step] = ("start".? <~ "step") ~ id ~ goesTo.? <~ (";") ^^ {
+  def step     : Parser[Step] = ("start".? <~ "step") ~ ident ~ goesTo.? <~ (";") ^^ {
     case startOpt ~ name ~ goesOpt => {
       val isStart = startOpt map { _ => true } getOrElse false
       val goesList = goesOpt getOrElse Nil
       Step(name, goesList, isStart)
     }
   }
-  def goesTo   : Parser[List[String]] = ("goes" ~ "to") ~> (id <~ ",").* ~ id ^^ {
+  def goesTo   : Parser[List[String]] = ("goes" ~ "to") ~> (ident <~ ",").* ~ ident ^^ {
     // TODO Could this be done simpler?
     case list ~ x => list :+ x
   }
