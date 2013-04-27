@@ -5,7 +5,6 @@ import model._
 import scalaz._
 import syntax.validation._
 
-// TODO We could use JavaIdenParser to reuse ident parser
 object WorkflowParser extends JavaTokenParsers {
   def workflow: Parser[Workflow] = ("workflow" ~> ident <~ "{") ~ step.* <~ ("}" ~ ";") ^^ {
     case name ~ steps => Workflow(name, steps)
