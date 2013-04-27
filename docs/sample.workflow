@@ -7,7 +7,7 @@ workflow issue {
 };
 
 workflow project {
-  start state negotiation 
+  start state negotiation
                goes to signed, failed;
   state signed goes to failed, done;
   state done   goes to paid, failed;

@@ -1,11 +1,11 @@
-(file 
-	(workflowDefinition workflow issue { 
+(file
+	(workflowDefinition workflow issue {
 		(stateDefinition start state open (goes goes to started) ;)
 		(stateDefinition state started (goes goes to open , resolved) ;)
 		(stateDefinition state resolved (goes goes to closed , open) ;)
 		(stateDefinition state closed ;)
-	 } ;) 
-	(workflowDefinition workflow project { 
+	 } ;)
+	(workflowDefinition workflow project {
 		(stateDefinition start state negotiation (goes goes to signed , failed) ;)
 		(stateDefinition state signed (goes goes to failed , done) ;)
 		(stateDefinition state done (goes goes to paid , failed) ;)
