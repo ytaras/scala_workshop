@@ -15,7 +15,7 @@ class ValidatorSpec extends Specification with ScalaCheck {
   // TODO Use parser for fixtures!
 
   "Start steps validator" should {
-    "fail on no start step" in {
+    "fail on 2 start step" in {
       parse("""workflow sample {
           start step start goes to end;
           start step end;
@@ -42,7 +42,6 @@ class ValidatorSpec extends Specification with ScalaCheck {
             };""").validate leftMap { _.size } must_== 3.failure
         }
       }
-
         "syntax extension" should {
           import generators._
           "pass valid workflow" in {
@@ -50,6 +49,16 @@ class ValidatorSpec extends Specification with ScalaCheck {
                 start step start goes to end;
                 step end;
               };""").validate must beSuccess
+          }
+          "stack errros from different validators" in {
+            parse("""workflow sample {
+              start step s1 goes to e1;
+              start step s2 goes to e3;
+            };""").validate must_== NonEmptyList(
+            "2 start steps found",
+            "step 'e1' is used but not defined",
+            "step 'e3' is used but not defined"
+            ).fail
           }
           "be called as method" in checkProp(Prop.forAll(genWorkflow)(
             (wf: Workflow) => WorkflowValidator.validate(wf) must_== wf.validate
