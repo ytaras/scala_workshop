@@ -1,5 +1,7 @@
 scalaVersion := "2.10.1"
 
+scalacOptions ++= Seq("-unchecked", "-deprecation")
+
 libraryDependencies ++= Seq(
     "org.scalaz" %% "scalaz-core" % "7.0.0",
     "org.mongodb" %% "casbah" % "2.6.0",

@@ -10,6 +10,8 @@ import model._
 import mongoRepository._
 import generators._
 import org.scalacheck.Prop
+import scalaz._
+import syntax.std.option._
 
 class MongoRepositorySpec extends Specification
   with ValidationSpec with ScalaCheck {
@@ -30,7 +32,7 @@ class MongoRepositorySpec extends Specification
   }
 
   "implicit conversion" should {
-    "convert workflow" in {
+    "convert from workflow" in {
       val name = Prop.forAll { (wf: Workflow) => wf.asDbObject("name") === wf.name }
       val id = Prop.forAll { (wf: Workflow) => wf.asDbObject("_id") === wf.name }
       val steps = Prop.forAll { (wf: Workflow) =>
@@ -39,7 +41,14 @@ class MongoRepositorySpec extends Specification
       }
       name && steps && id
     }
-    "convert step" in {
+    "convert to workflow" in {
+      MongoDBObject("name" -> "name").asWorkflow must_== Workflow("name").some
+      MongoDBObject("noname" -> "name").asWorkflow must_== None
+    }
+    "converts workflow back and forth" in prop { wf: Workflow =>
+      wf.asDbObject.asWorkflow must_== wf.some
+    }
+    "convert from step" in {
       val name = Prop.forAll { (st: Step) => st.asDbObject("name") === st.name }
       val start = Prop.forAll {
         (st: Step) => st.asDbObject("start") === st.start
@@ -48,6 +57,13 @@ class MongoRepositorySpec extends Specification
         (st: Step) => st.asDbObject("goes") === MongoDBList(st.goesTo:_*)
       }
       name && start && goes
+    }
+    "convert to step" in {
+      MongoDBObject("name" -> "name").asStep must_== Step("name").some
+      MongoDBObject("noname" -> "name").asStep must_== None
+      MongoDBObject("name" -> "name", "start" -> true).asStep must_== Step("name", true).some
+      MongoDBObject("name" -> "name", "goes" -> Nil).asStep must_== Step("name").some
+      MongoDBObject("name" -> "name", "goes" -> List("a")).asStep must_== Step("name", List("a")).some
     }
   }
   "overwrite" should {
@@ -80,6 +96,15 @@ class MongoRepositorySpec extends Specification
         beFailure(ObjectExists("workflow", wf.name))
 
       there was (no(workflowColl) += wf.asDbObject)
+    }
+  }
+  "load" should {
+    "load and convert" in prop { wf: Workflow =>
+      val context = new dbContext {}
+      import context._
+      workflowColl.findOneByID(wf.name) returns wf.asDbObject.some
+
+      mongoRepository.load(wf.name) must_== wf.some
     }
   }
 }
