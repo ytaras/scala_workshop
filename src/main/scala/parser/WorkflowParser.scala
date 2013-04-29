@@ -1,3 +1,4 @@
+package waas
 package parser
 
 import scala.util.parsing.combinator._

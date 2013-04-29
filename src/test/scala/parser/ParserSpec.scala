@@ -1,5 +1,6 @@
-package parser
+package waas.parser
 
+import waas._
 import org.specs2.mutable._
 import model._
 import scalaz._

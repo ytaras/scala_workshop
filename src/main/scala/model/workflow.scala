@@ -1,3 +1,4 @@
+package waas
 package model
 
 case class Workflow(name: String, steps: List[Step])

@@ -1,3 +1,4 @@
+package waas
 package util
 
 import scalaz._

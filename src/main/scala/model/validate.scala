@@ -1,3 +1,4 @@
+package waas
 package model
 
 import scalaz._

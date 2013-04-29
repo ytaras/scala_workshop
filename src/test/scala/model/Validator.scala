@@ -1,18 +1,16 @@
-package model
+package waas.model
 
+import waas._
 import org.specs2.mutable._
 import org.specs2.ScalaCheck
 import scalaz._
 import syntax.validation._
 import org.scalacheck._
-class ValidatorSpec extends Specification with ScalaCheck {
+class ValidatorSpec extends Specification with ScalaCheck with ValidationSpec {
   import modelSyntax._
   import parser._
   import WorkflowParser._
   def parse(s: String): Workflow = WorkflowParser(s).toOption.map{ _.head }.get
-  def beSuccess = beTrue ^^ { (_:Validation[_, _]).isSuccess }
-  def beFailure(s: String) = be_==(s.failNel)
-  // TODO Use parser for fixtures!
 
   "start steps validator" should {
     "fail on 2 start step" in {
