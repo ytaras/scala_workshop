@@ -33,15 +33,16 @@ class ValidatorSpec extends Specification with ScalaCheck {
           parse("""workflow sample {
               start step start goes to end1;
               step end;
-            };""").validate must_== "step 'end1' is used but not defined".failNel
-          }
-        "stacks errors" in {
+          };""").validate must_== "step 'end1' is used but not defined".failNel
+        }
+        "stack errors" in {
           parse("""workflow sample {
               start step start goes to end1;
               step end goes to end2, end3;
             };""").validate leftMap { _.size } must_== 3.failure
-          }
         }
+      }
+
         "syntax extension" should {
           import generators._
           "pass valid workflow" in {
