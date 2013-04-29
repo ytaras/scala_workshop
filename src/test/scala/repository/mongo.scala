@@ -14,7 +14,14 @@ import org.scalacheck.Prop
 class MongoRepositorySpec extends Specification
   with ValidationSpec with ScalaCheck {
   trait dbContext extends Mockito {
-    lazy val workflowColl = mock[MongoCollection]
+    lazy val workflowColl = {
+      val ret = mock[MongoCollection].smart
+      ret.findOneByID(any[String]) returns {
+        if(valueExist) Some(MongoDBObject()) else None
+      }
+      ret
+    }
+    val valueExist = false
     implicit lazy val db = {
       val ret = mock[MongoDB].smart
       ret("workflows") returns workflowColl
@@ -44,11 +51,19 @@ class MongoRepositorySpec extends Specification
     }
   }
   "save" should {
-    "save converted workflow" in prop { wf: Workflow => 
+    "save converted workflow" in prop { wf: Workflow =>
       val context = new dbContext {}
       import context._
       mongoRepository.save(wf) must beSuccess
       there was (one(workflowColl) += wf.asDbObject)
+    }
+    "dont save if value exist" in prop { wf: Workflow =>
+      val context = new dbContext { override val valueExist = true }
+      import context._
+      mongoRepository.save(wf) must
+        beFailure(ObjectExists("workflow", wf.name))
+
+      there was (no(workflowColl) += wf.asDbObject)
     }
   }
 }

@@ -4,10 +4,14 @@ import com.mongodb.casbah.Imports._
 import model._
 import scalaz._
 import syntax.validation._
+import syntax.std.option._
 
 case object mongoRepository {
   def save(wf: Workflow)(implicit db: MongoDB) = {
-    (db("workflows") += wf.asDbObject).success
+    val loaded: Option[DBObject] = db("workflows").findOneByID(wf.name)
+    loaded map {
+      _ => ObjectExists("workflow", wf.name)
+    } toFailure { db("workflows") += wf.asDbObject }
   }
 
   implicit class wfConverter(wf: Workflow) {
@@ -25,3 +29,6 @@ case object mongoRepository {
     )
   }
 }
+
+sealed trait RepositoryErrors
+case class ObjectExists(name: String, id: String)
