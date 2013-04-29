@@ -3,12 +3,17 @@ package waas.repository
 import waas._
 import org.specs2.mock._
 import org.specs2.mutable._
+import org.specs2.ScalaCheck
 import org.specs2.specification.Scope
 import com.mongodb.casbah.Imports._
 import model._
+import mongoRepository._
+import generators._
+import org.scalacheck.Prop
 
-class MongoRepositorySpec extends Specification with Mockito with ValidationSpec {
-  trait dbContext extends Mockito with Scope {
+class MongoRepositorySpec extends Specification
+  with ValidationSpec with ScalaCheck {
+  trait dbContext extends Mockito {
     lazy val workflowColl = mock[MongoCollection]
     implicit lazy val db = {
       val ret = mock[MongoDB].smart
@@ -17,45 +22,33 @@ class MongoRepositorySpec extends Specification with Mockito with ValidationSpec
     }
   }
 
+  "implicit conversion" should {
+    "convert workflow" in {
+      val name = Prop.forAll { (wf: Workflow) => wf.asDbObject("name") === wf.name }
+      val id = Prop.forAll { (wf: Workflow) => wf.asDbObject("_id") === wf.name }
+      val steps = Prop.forAll { (wf: Workflow) =>
+        wf.asDbObject("steps") ===
+          MongoDBList(wf.steps map { _.asDbObject }:_*)
+      }
+      name && steps && id
+    }
+    "convert step" in {
+      val name = Prop.forAll { (st: Step) => st.asDbObject("name") === st.name }
+      val start = Prop.forAll {
+        (st: Step) => st.asDbObject("start") === st.start
+      }
+      val goes = Prop.forAll {
+        (st: Step) => st.asDbObject("goes") === MongoDBList(st.goesTo:_*)
+      }
+      name && start && goes
+    }
+  }
   "save" should {
-    "save empty workflow" in new dbContext {
-      mongoRepository.save(Workflow("empty")) must beSuccess
-      there was (one(workflowColl) += MongoDBObject("_id" -> "empty", "name" -> "empty", "steps" -> Nil))
-      mongoRepository.save(Workflow("other")) must beSuccess
-      there was (one(workflowColl) += MongoDBObject("_id" -> "other", "name" -> "other", "steps" -> Nil))
-    }
-    "save workflow with one step" in new dbContext {
-      val wf = Workflow(
-        "wf",
-        List( Step("step", true) ))
+    "save converted workflow" in prop { wf: Workflow => 
+      val context = new dbContext {}
+      import context._
       mongoRepository.save(wf) must beSuccess
-
-      val expectedObject = MongoDBObject(
-        "name" -> "wf",
-        "_id" -> "wf",
-        "steps" -> List(
-          Map("name" -> "step", "start" -> true, "goes" -> Nil)
-        )
-      )
-      there was (one(workflowColl) += expectedObject)
-    }
-
-    "save workflow with few steps" in new dbContext {
-      val wf = Workflow(
-        "wf",
-        List( Step("start", List("end"), true), Step("end") ))
-
-      mongoRepository.save(wf) must beSuccess
-
-      val expectedObject = MongoDBObject(
-        "name" -> "wf",
-        "_id" -> "wf",
-        "steps" -> List(
-          Map("name" -> "start", "start" -> true, "goes" -> List("end")),
-          Map("name" -> "end",   "start" -> false, "goes" -> Nil)
-        )
-      )
-      there was (one(workflowColl) += expectedObject)
+      there was (one(workflowColl) += wf.asDbObject)
     }
   }
 }

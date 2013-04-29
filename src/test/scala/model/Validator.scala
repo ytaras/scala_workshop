@@ -71,23 +71,26 @@ class ValidatorSpec extends Specification with ScalaCheck with ValidationSpec {
         "step 'e3' is used but not defined"
       ).fail
     }
-    "be called as method" in checkProp(Prop.forAll(genWorkflow)(
+    "be called as method" in prop {
       (wf: Workflow) => WorkflowValidator.validate(wf) must_== wf.validate
-    ))
+    }
   }
 }
 
-    object generators {
-      import Gen._
-      import Arbitrary.arbitrary
+object generators {
+  import Gen._
+  import Arbitrary.arbitrary
 
-      val genStep = for {
-        name <- arbitrary[String]
-        other <- arbitrary[List[String]]
-        start <- arbitrary[Boolean]
-      } yield Step(name, other, start)
-      val genWorkflow = for {
-        name <- arbitrary[String]
-        steps <- listOf(genStep)
-      } yield Workflow(name, steps)
-    }
+  val genStep = for {
+    name <- arbitrary[String]
+    other <- arbitrary[List[String]]
+    start <- arbitrary[Boolean]
+  } yield Step(name, other, start)
+  val genWorkflow = for {
+    name <- arbitrary[String]
+    steps <- listOf(genStep)
+  } yield Workflow(name, steps)
+
+  implicit def stepArb = Arbitrary { genStep }
+  implicit def workflowArb: Arbitrary[Workflow] = Arbitrary { genWorkflow }
+}
