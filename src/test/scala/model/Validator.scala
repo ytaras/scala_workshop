@@ -14,7 +14,7 @@ class ValidatorSpec extends Specification with ScalaCheck {
   def beFailure(s: String) = be_==(s.failNel)
   // TODO Use parser for fixtures!
 
-  "Start steps validator" should {
+  "start steps validator" should {
     "fail on 2 start step" in {
       parse("""workflow sample {
           start step start goes to end;
@@ -23,48 +23,61 @@ class ValidatorSpec extends Specification with ScalaCheck {
       }
       "fail on no start step" in {
         parse("""workflow sample {
-            step start goes to end;
-            step end;
-          };""").validate must_== "no start steps found".failNel
-        }
-      }
-      "steps validator" should {
-        "fail if step is defined and not used" in {
-          parse("""workflow sample {
-              start step start goes to end1;
-              step end;
-          };""").validate must_== "step 'end1' is used but not defined".failNel
-        }
-        "stack errors" in {
-          parse("""workflow sample {
-              start step start goes to end1;
-              step end goes to end2, end3;
-            };""").validate leftMap { _.size } must_== 3.failure
-        }
-      }
-        "syntax extension" should {
-          import generators._
-          "pass valid workflow" in {
-            parse("""workflow sample {
-                start step start goes to end;
-                step end;
-              };""").validate must beSuccess
-          }
-          "stack errros from different validators" in {
-            parse("""workflow sample {
-              start step s1 goes to e1;
-              start step s2 goes to e3;
-            };""").validate must_== NonEmptyList(
-            "2 start steps found",
-            "step 'e1' is used but not defined",
-            "step 'e3' is used but not defined"
-            ).fail
-          }
-          "be called as method" in checkProp(Prop.forAll(genWorkflow)(
-            (wf: Workflow) => WorkflowValidator.validate(wf) must_== wf.validate
-          ))
+          step start goes to end;
+          step end goes to start;
+        };""").validate must_== "no start steps found".failNel
       }
     }
+  "steps validator" should {
+    "fail if step is not defined and used" in {
+      parse("""workflow sample {
+        start step start goes to end1, end;
+        step end;
+      };""").validate must_== "step 'end1' is used but not defined".failNel
+    }
+    "stack errors" in {
+      parse("""workflow sample {
+        start step start goes to end1, end;
+        step end goes to end2, end3;
+      };""").validate must_== NonEmptyList(
+        "step 'end1' is used but not defined",
+        "step 'end2' is used but not defined",
+        "step 'end3' is used but not defined"
+      ).fail
+    }
+  }
+  "step accessibility validator" should {
+    "fail is step is defined but not accessible" in {
+      parse("""workflow sample {
+        start step start goes to end;
+        step end;
+        step end2;
+      };""").validate must_== "step 'end2' is defined but not used".failNel
+    }
+  }
+  "syntax extension" should {
+    import generators._
+    "pass valid workflow" in {
+      parse("""workflow sample {
+        start step start goes to end;
+        step end;
+      };""").validate must beSuccess
+    }
+    "stack errros from different validators" in {
+      parse("""workflow sample {
+        start step s1 goes to e1;
+        start step s2 goes to e3;
+      };""").validate must_== NonEmptyList(
+        "2 start steps found",
+        "step 'e1' is used but not defined",
+        "step 'e3' is used but not defined"
+      ).fail
+    }
+    "be called as method" in checkProp(Prop.forAll(genWorkflow)(
+      (wf: Workflow) => WorkflowValidator.validate(wf) must_== wf.validate
+    ))
+  }
+}
 
     object generators {
       import Gen._
