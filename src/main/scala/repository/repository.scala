@@ -14,6 +14,12 @@ case object mongoRepository {
     } toFailure { db("workflows") += wf.asDbObject }
   }
 
+  def overwrite(wf:Workflow)(implicit db: MongoDB) = {
+    db("workflows").findOneByID(wf.name) map {
+      _ => db("workflows") += wf.asDbObject
+    } toSuccess { ObjectNotExists("workflow", wf.name) }
+  }
+
   implicit class wfConverter(wf: Workflow) {
     def convertedSteps = wf.steps.map { _.asDbObject }
     def asDbObject = MongoDBObject(
@@ -32,3 +38,4 @@ case object mongoRepository {
 
 sealed trait RepositoryErrors
 case class ObjectExists(name: String, id: String)
+case class ObjectNotExists(name: String, id: String)

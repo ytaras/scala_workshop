@@ -50,6 +50,22 @@ class MongoRepositorySpec extends Specification
       name && start && goes
     }
   }
+  "overwrite" should {
+    "save converted workflow" in prop { wf: Workflow =>
+      val context = new dbContext { override val valueExist = true}
+      import context._
+      mongoRepository.overwrite(wf) must beSuccess
+      there was (one(workflowColl) += wf.asDbObject)
+    }
+    "dont save if value exist" in prop { wf: Workflow =>
+      val context = new dbContext { }
+      import context._
+      mongoRepository.overwrite(wf) must
+        beFailure(ObjectNotExists("workflow", wf.name))
+
+      there was (no(workflowColl) += wf.asDbObject)
+    }
+  }
   "save" should {
     "save converted workflow" in prop { wf: Workflow =>
       val context = new dbContext {}
